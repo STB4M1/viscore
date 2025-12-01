@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: viscore
+Version: 0.1.0
+Summary: Visualization utilities for 2D/3D plotting and profile extraction
+Author-email: Mitsuki ISHIYAMA <162681396+STB4M1@users.noreply.github.com>
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: matplotlib
+Requires-Dist: pandas

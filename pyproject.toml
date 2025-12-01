@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "viscore"
+version = "0.1.0"
+description = "Visualization utilities for 2D/3D plotting and profile extraction"
+authors = [
+    { name="Mitsuki ISHIYAMA", email="162681396+STB4M1@users.noreply.github.com" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+
+# 必要な依存ライブラリ
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "pandas",
+]
+
+# viscore を import できるようにする
+# (srcレイアウトではないので空でOK)
+[tool.setuptools]
+packages = ["viscore"]
+

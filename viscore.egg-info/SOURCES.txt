@@ -1,0 +1,10 @@
+pyproject.toml
+viscore/__init__.py
+viscore/plotting_2d.py
+viscore/plotting_3d.py
+viscore/profile.py
+viscore.egg-info/PKG-INFO
+viscore.egg-info/SOURCES.txt
+viscore.egg-info/dependency_links.txt
+viscore.egg-info/requires.txt
+viscore.egg-info/top_level.txt
