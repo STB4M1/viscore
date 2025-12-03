@@ -9,6 +9,7 @@ def create_plot_3d(
     output_image_path,
 
     # --- data preprocessing ---
+    swap_xy=True,
     invert_y=True,
 
     # --- figure / appearance ---
@@ -89,7 +90,8 @@ def create_plot_3d(
     # ============================================================
     # 1. Data preprocessing
     # ============================================================
-    data = data.rename(columns={'x': 'y_temp', 'y': 'x'}).rename(columns={'y_temp': 'y'})
+    if swap_xy:
+        data = data.rename(columns={'x': 'y_temp', 'y': 'x'}).rename(columns={'y_temp': 'y'})
 
     # y 軸反転
     if invert_y:

@@ -9,6 +9,7 @@ def create_heatmap_2d(
     output_image_path,
 
     # --- data preprocessing ---
+    swap_xy=True,
     invert_y=True,
     normalize_origin=True,
 
@@ -75,7 +76,8 @@ def create_heatmap_2d(
     # ============================================================
     # 1. Preprocessing
     # ============================================================
-    data = data.rename(columns={'x': 'y_temp', 'y': 'x'}).rename(columns={'y_temp': 'y'})
+    if swap_xy:
+        data = data.rename(columns={'x': 'y_temp', 'y': 'x'}).rename(columns={'y_temp': 'y'})
 
     if invert_y:
         data['y'] = data['y'].max() - data['y']
@@ -221,3 +223,4 @@ def create_heatmap_2d(
         plt.savefig(output_image_path, dpi=dpi_val, bbox_inches='tight')
     finally:
         plt.close(fig)
+
