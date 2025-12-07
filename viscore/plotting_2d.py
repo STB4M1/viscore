@@ -44,8 +44,8 @@ def create_heatmap_2d(
     y_tick_interval=None,
     tick_label_size=16,
     tick_direction='in',
-    x_tick_pad=0,
-    y_tick_pad=0,
+    x_tick_pad=5,
+    y_tick_pad=5,
 
     # --- tick format (decimal places) ---
     x_tick_decimals=None,
