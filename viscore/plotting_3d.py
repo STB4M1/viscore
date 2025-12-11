@@ -86,6 +86,12 @@ def create_plot_3d(
 
     # --- save options ---
     use_tight=True,
+
+    # --- NEW: margins (0〜1の正規化値) ---
+    margin_left=None,
+    margin_right=None,
+    margin_top=None,
+    margin_bottom=None,
 ):
     # ============================================================
     # 1. Data preprocessing
@@ -265,6 +271,15 @@ def create_plot_3d(
 
     if title is not None:
         ax.set_title(title, fontsize=title_font_size, pad=title_pad)
+
+    # 8.5 Adjust margins
+    if any(v is not None for v in [margin_left, margin_right, margin_top, margin_bottom]):
+        fig.subplots_adjust(
+            left=margin_left if margin_left is not None else None,
+            right=margin_right if margin_right is not None else None,
+            top=margin_top if margin_top is not None else None,
+            bottom=margin_bottom if margin_bottom is not None else None
+        )
 
     # ============================================================
     # 9. Save
