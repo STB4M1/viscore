@@ -12,10 +12,12 @@ from .plotting_2d import create_heatmap_2d
 from .plotting_vector_2d import create_vector_field_2d
 from .plotting_3d import create_plot_3d
 from .profile import create_plot_profile
+from .plotting_axis_image import add_axis_to_image
 
 __all__ = [
     "create_heatmap_2d",
     "create_vector_field_2d",
     "create_plot_3d",
     "create_plot_profile",
+    "add_axis_to_image"
 ]
