@@ -13,11 +13,15 @@ from .plotting_vector_2d import create_vector_field_2d
 from .plotting_3d import create_plot_3d
 from .profile import create_plot_profile
 from .plotting_axis_image import add_axis_to_image
+from .histogram import plot_histogram
+from .lineplot_2d import create_lineplot_2d
 
 __all__ = [
     "create_heatmap_2d",
     "create_vector_field_2d",
     "create_plot_3d",
     "create_plot_profile",
-    "add_axis_to_image"
+    "add_axis_to_image",
+    "plot_histogram",
+    "create_lineplot_2d"
 ]
