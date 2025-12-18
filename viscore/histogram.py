@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 from scipy.stats import gaussian_kde
+from statsmodels.robust.scale import qn_scale
 
 from viscore.styles.tex_fonts import setup_fonts
 
@@ -23,6 +24,18 @@ from viscore.styles.tex_fonts import setup_fonts
 # ===============================================
 #  ビン幅計算（内部ユーティリティ）
 # ===============================================
+def _qn_scale(data):
+    """
+    Qn scale estimator (Rousseeuw & Croux, 1993).
+    """
+    data = np.asarray(data)
+    data = data[~np.isnan(data)]
+
+    if data.size < 2:
+        return 0.0
+
+    return qn_scale(data)
+
 def _calc_bins(data, method="fd"):
 
     data = np.asarray(data)
@@ -59,6 +72,13 @@ def _calc_bins(data, method="fd"):
         k = int(np.ceil((x_max - x_min) / h)) if h > 0 else int(np.sqrt(len(data)))
         return np.linspace(x_min, x_max, k + 1)
 
+    # 1993 sss Alternatives to the Median Absolute Deviation PJ Rousseeuw C Croux
+    if method in ("scott_qn", "scott_rc", "robust_scott_rc"):
+        sigma = _qn_scale(data)
+        h = 3.49 * sigma * len(data) ** (-1/3)
+        k = int(np.ceil((x_max - x_min) / h)) if h > 0 else int(np.sqrt(n))
+        return np.linspace(x_min, x_max, k + 1)
+
     if method == "shimazaki":
         Kmin, Kmax = 4, 150
         ks = np.arange(Kmin, Kmax + 1)
@@ -77,9 +97,8 @@ def _calc_bins(data, method="fd"):
 
     raise ValueError(f"Unknown binning method: {method}")
 
-
 # ===============================================
-#  ヒストグラム描画（KDE 対応）
+#  ヒストグラム描画（KDE / Overlay 完全対応）
 # ===============================================
 def plot_histogram(
     data,
@@ -120,91 +139,51 @@ def plot_histogram(
     grid_style="--",
     grid_alpha=0.4,
 
+    # === Overlay control ===
+    ax=None,
+    label=None,
+    add_legend=False,
+
     # === Output ===
     out_path=None,
     show=False,
 ):
     """
-    VisCoreスタイルのヒストグラム描画関数（KDE対応版）
+    VisCoreスタイルのヒストグラム描画関数（完成版）
+
+    ✔ 単体描画 / overlay 両対応
+    ✔ KDE 対応
+    ✔ 見た目完全統一
+    ✔ 後方互換100%
     """
 
-    # フォント
+    # --------------------------------------------------
+    # Setup
+    # --------------------------------------------------
     setup_fonts()
 
     data = np.asarray(data)
     data = data[~np.isnan(data)]
 
-    # ------------------------------
-    #  ビン計算
-    # ------------------------------
+    # --------------------------------------------------
+    # Bin calculation
+    # --------------------------------------------------
     if isinstance(bins, str):
-        computed_bins = _calc_bins(data, bins)
-    else:
-        computed_bins = bins
+        bins = _calc_bins(data, bins)
 
-    fig, ax = plt.subplots(figsize=figsize)
+    # --------------------------------------------------
+    # Figure / Axes management
+    # --------------------------------------------------
+    created_fig = False
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+        created_fig = True
 
-    # ------------------------------
-    #  スタイル設定
-    # ------------------------------
+    # --------------------------------------------------
+    # VisCore axis style（★ 常に適用 ★）
+    # --------------------------------------------------
     for s in ax.spines.values():
         s.set_linewidth(spine_linewidth)
-
-    # ------------------------------
-    #  ヒストグラム本体
-    # ------------------------------
-    ax.hist(
-        data,
-        bins=computed_bins,
-        range=range,
-        color=facecolor,
-        edgecolor=edgecolor,
-        alpha=alpha,
-    )
-
-    # ------------------------------
-    #  KDE（核密度推定）
-    # ------------------------------
-    if kde:
-        kde_model = gaussian_kde(data)
-
-        xs = np.linspace(
-            xlim[0] if xlim else data.min(),
-            xlim[1] if xlim else data.max(),
-            400
-        )
-        ys = kde_model(xs)
-
-        # 正規化：ヒストグラムとスケールを合わせる
-        bin_width = computed_bins[1] - computed_bins[0]
-        ys_scaled = ys * len(data) * bin_width
-
-        ax.plot(
-            xs,
-            ys_scaled,
-            color=kde_color,
-            linewidth=kde_linewidth,
-            linestyle=kde_linestyle,
-        )
-
-    # ------------------------------
-    #  Labels / Titles
-    # ------------------------------
-    if xlabel:
-        ax.set_xlabel(xlabel, fontsize=xlabel_fontsize, labelpad=10)
-
-    ax.set_ylabel(ylabel, fontsize=ylabel_fontsize, labelpad=10)
-
-    if title:
-        ax.set_title(title, fontsize=title_fontsize, pad=12)
-
-    # ------------------------------
-    #  Axis limits
-    # ------------------------------
-    if xlim:
-        ax.set_xlim(xlim)
-    if ylim:
-        ax.set_ylim(ylim)
 
     ax.tick_params(axis="x", labelsize=xtick_fontsize, direction="in", pad=10)
     ax.tick_params(axis="y", labelsize=ytick_fontsize, direction="in", pad=10)
@@ -212,21 +191,80 @@ def plot_histogram(
     if integer_yticks:
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-    # ------------------------------
-    # Grid
-    # ------------------------------
     if grid:
         ax.grid(True, linestyle=grid_style, alpha=grid_alpha)
 
-    # ------------------------------
-    # Save / Show
-    # ------------------------------
-    if out_path:
+    # --------------------------------------------------
+    # Histogram
+    # --------------------------------------------------
+    ax.hist(
+        data,
+        bins=bins,
+        range=range,
+        color=facecolor,
+        edgecolor=edgecolor,
+        alpha=alpha,
+        label=label,
+    )
+
+    # --------------------------------------------------
+    # KDE
+    # --------------------------------------------------
+    if kde:
+        kde_model = gaussian_kde(data)
+
+        xs = np.linspace(
+            xlim[0] if xlim else bins[0],
+            xlim[1] if xlim else bins[-1],
+            400,
+        )
+        ys = kde_model(xs)
+
+        bin_width = bins[1] - bins[0]
+        ys *= len(data) * bin_width
+
+        ax.plot(
+            xs,
+            ys,
+            color=kde_color,
+            linewidth=kde_linewidth,
+            linestyle=kde_linestyle,
+        )
+
+    # --------------------------------------------------
+    # Labels / Titles（Figure owner のみ）
+    # --------------------------------------------------
+    if created_fig:
+        if xlabel:
+            ax.set_xlabel(xlabel, fontsize=xlabel_fontsize, labelpad=10)
+        ax.set_ylabel(ylabel, fontsize=ylabel_fontsize, labelpad=10)
+
+        if title:
+            ax.set_title(title, fontsize=title_fontsize, pad=12)
+
+        if xlim:
+            ax.set_xlim(xlim)
+        if ylim:
+            ax.set_ylim(ylim)
+
+    # --------------------------------------------------
+    # Legend
+    # --------------------------------------------------
+    if label is not None and add_legend:
+        ax.legend(fontsize=20)
+
+    # --------------------------------------------------
+    # Save / Show / Close（Figure owner のみ）
+    # --------------------------------------------------
+    if created_fig and out_path:
         out_path = Path(out_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
 
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
+    if created_fig:
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)
+
+    return ax
