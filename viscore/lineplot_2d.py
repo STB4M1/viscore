@@ -1,5 +1,3 @@
-# viscore/plotting_2d/lineplot_2d.py
-
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.ticker import FormatStrFormatter
@@ -107,6 +105,11 @@ def create_lineplot_2d(
     legend_formatter=None,
 
     # =========================
+    # その他
+    # =========================
+    sort_labels=True,
+
+    # =========================
     # 右 y 軸（secondary axis）
     # =========================
     use_secondary_y=False,
@@ -115,11 +118,6 @@ def create_lineplot_2d(
     secondary_y_lim=None,
     secondary_y_tick_interval=None,
     secondary_y_tick_format=None,
-
-    # =========================
-    # その他
-    # =========================
-    sort_labels=True,
 ):
     """
     VisCore: 汎用 2D 折れ線プロット（完全制御版）
@@ -134,13 +132,16 @@ def create_lineplot_2d(
     """
 
     # =========================
-    # Figure & Axes
+    # Figure
     # =========================
     plt.figure(figsize=figsize)
-    ax = plt.gca()
 
+    # =========================
+    # Axes
+    # =========================
+    ax = plt.gca()
     ax2 = None
-    secondary_key_set = set(secondary_y_keys) if use_secondary_y and secondary_y_keys is not None else set()
+    secondary_key_set = set(secondary_y_keys) if (use_secondary_y and secondary_y_keys is not None) else set()
 
     if use_secondary_y:
         ax2 = ax.twinx()
@@ -207,6 +208,7 @@ def create_lineplot_2d(
             else str(key)
         )
 
+        # 右軸に乗せるキーかどうか
         target_ax = ax2 if (ax2 is not None and key in secondary_key_set) else ax
 
         target_ax.plot(
@@ -228,11 +230,7 @@ def create_lineplot_2d(
     ax.set_ylabel(ylabel, fontsize=ylabel_fontsize, labelpad=ylabel_pad)
 
     if ax2 is not None and secondary_ylabel is not None:
-        ax2.set_ylabel(
-            secondary_ylabel,
-            fontsize=ylabel_fontsize,
-            labelpad=ylabel_pad,
-        )
+        ax2.set_ylabel(secondary_ylabel, fontsize=ylabel_fontsize, labelpad=ylabel_pad)
 
     if title is not None:
         ax.set_title(title, fontsize=title_fontsize)
@@ -293,6 +291,7 @@ def create_lineplot_2d(
     # Grid
     # =========================
     if grid:
+        # 元コードでは plt.grid だったが、ax が gca() なので挙動は同じ
         ax.grid(True, linestyle=grid_style, alpha=grid_alpha)
 
     # =========================
@@ -305,34 +304,30 @@ def create_lineplot_2d(
             spine.set_linewidth(spine_width)
 
     # =========================
-    # Legend (両軸をまとめて)
+    # Legend
     # =========================
     if show_legend:
-        handles1, labels1 = ax.get_legend_handles_labels()
-        if ax2 is not None:
+        if use_secondary_y and ax2 is not None:
+            # 両軸の line を統合
+            handles1, labels1 = ax.get_legend_handles_labels()
             handles2, labels2 = ax2.get_legend_handles_labels()
-        else:
-            handles2, labels2 = [], []
+            handles = handles1 + handles2
+            legend_labels = labels1 + labels2
 
-        handles = handles1 + handles2
-        legend_labels = labels1 + labels2
-
-        if legend_outside:
             plt.legend(
                 handles,
                 legend_labels,
-                loc=legend_loc,
-                bbox_to_anchor=legend_bbox,
+                loc=legend_loc if legend_outside else None,
+                bbox_to_anchor=legend_bbox if legend_outside else None,
                 fontsize=legend_fontsize,
                 frameon=False,
                 ncol=legend_ncol,
             )
         else:
-            # loc が None のときは Matplotlib のデフォルト位置
+            # === 元コードと完全に同じ呼び出し ===
             plt.legend(
-                handles,
-                legend_labels,
-                loc=legend_loc,
+                loc=legend_loc if legend_outside else None,
+                bbox_to_anchor=legend_bbox if legend_outside else None,
                 fontsize=legend_fontsize,
                 frameon=False,
                 ncol=legend_ncol,
