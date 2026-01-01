@@ -118,6 +118,9 @@ def create_lineplot_2d(
     secondary_y_lim=None,
     secondary_y_tick_interval=None,
     secondary_y_tick_format=None,
+
+    vlines=None,   # e.g. [(123.4, dict(linestyle="--", linewidth=2, alpha=0.8))]
+    hlines=None,
 ):
     """
     VisCore: 汎用 2D 折れ線プロット（完全制御版）
@@ -293,6 +296,25 @@ def create_lineplot_2d(
     if grid:
         # 元コードでは plt.grid だったが、ax が gca() なので挙動は同じ
         ax.grid(True, linestyle=grid_style, alpha=grid_alpha)
+
+    # =========================
+    # Extra lines (vline / hline)
+    # =========================
+    if vlines is not None:
+        for item in vlines:
+            if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], dict):
+                x, kw = item
+                ax.axvline(x, **kw)
+            else:
+                ax.axvline(item)
+
+    if hlines is not None:
+        for item in hlines:
+            if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], dict):
+                y, kw = item
+                ax.axhline(y, **kw)
+            else:
+                ax.axhline(item)
 
     # =========================
     # Spine
