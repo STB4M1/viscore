@@ -121,6 +121,13 @@ def create_lineplot_2d(
 
     vlines=None,   # e.g. [(123.4, dict(linestyle="--", linewidth=2, alpha=0.8))]
     hlines=None,
+
+    # =========================
+    # scale (linear / log / symlog / logit)
+    # =========================
+    x_scale="linear",
+    y_scale="linear",
+    secondary_y_scale="linear",
 ):
     """
     VisCore: 汎用 2D 折れ線プロット（完全制御版）
@@ -258,6 +265,12 @@ def create_lineplot_2d(
     if y_lim is not None:
         ax.set_ylim(*y_lim)
 
+    # Scale (primary)
+    if x_scale is not None:
+        ax.set_xscale(x_scale)
+    if y_scale is not None:
+        ax.set_yscale(y_scale)
+
     # =========================
     # Axis & ticks (secondary y)
     # =========================
@@ -272,6 +285,10 @@ def create_lineplot_2d(
             )
         if secondary_y_lim is not None:
             ax2.set_ylim(*secondary_y_lim)
+
+    # Scale (secondary y)
+    if ax2 is not None and secondary_y_scale is not None:
+        ax2.set_yscale(secondary_y_scale)
 
     # =========================
     # Tick 見た目
