@@ -128,6 +128,24 @@ def create_lineplot_2d(
     x_scale="linear",
     y_scale="linear",
     secondary_y_scale="linear",
+
+    # =========================
+    # minor tick（副目盛）primary
+    # =========================
+    primary_show_minor_ticks=None,
+    primary_x_minor_tick_interval=None,   # Noneなら自動
+    primary_y_minor_tick_interval=None,   # Noneなら自動
+    primary_major_tick_length=None,
+    primary_minor_tick_length=None,
+
+    # =========================
+    # minor tick（副目盛）secondary (right y)
+    # =========================
+    secondary_show_minor_ticks=None,
+    secondary_y_minor_tick_interval=None, # Noneなら自動
+    secondary_major_tick_length=None,
+    secondary_minor_tick_length=None,
+
 ):
     """
     VisCore: 汎用 2D 折れ線プロット（完全制御版）
@@ -291,20 +309,72 @@ def create_lineplot_2d(
         ax2.set_yscale(secondary_y_scale)
 
     # =========================
-    # Tick 見た目
+    # Minor ticks (primary)  ※Noneなら触らない（後方互換）
     # =========================
+    if primary_show_minor_ticks is True:
+        ax.minorticks_on()
+    elif primary_show_minor_ticks is False:
+        ax.minorticks_off()
+
+    # interval 固定は「副目盛をONにする指定がある時だけ」＋「指定がある時だけ」
+    if primary_show_minor_ticks is True:
+        if primary_x_minor_tick_interval is not None and (x_scale in (None, "linear")):
+            ax.xaxis.set_minor_locator(ticker.MultipleLocator(primary_x_minor_tick_interval))
+        if primary_y_minor_tick_interval is not None and (y_scale in (None, "linear")):
+            ax.yaxis.set_minor_locator(ticker.MultipleLocator(primary_y_minor_tick_interval))
+
+
+    # =========================
+    # Minor ticks (secondary y) ※Noneなら触らない（後方互換）
+    # =========================
+    if ax2 is not None:
+        if secondary_show_minor_ticks is True:
+            ax2.minorticks_on()
+        elif secondary_show_minor_ticks is False:
+            ax2.minorticks_off()
+
+        if secondary_show_minor_ticks is True:
+            if secondary_y_minor_tick_interval is not None and (secondary_y_scale in (None, "linear")):
+                ax2.yaxis.set_minor_locator(ticker.MultipleLocator(secondary_y_minor_tick_interval))
+
+    # =========================
+    # Tick 見た目（backward compatible）
+    # =========================
+    # primary major（lengthは指定されたときだけ）
     ax.tick_params(
         axis="both",
+        which="major",
         labelsize=tick_labelsize,
         direction=tick_direction,
         pad=tick_pad,
+        **({} if primary_major_tick_length is None else {"length": primary_major_tick_length}),
     )
+
+    # primary minor（lengthは指定されたときだけ）
+    ax.tick_params(
+        axis="both",
+        which="minor",
+        direction=tick_direction,
+        pad=tick_pad,
+        **({} if primary_minor_tick_length is None else {"length": primary_minor_tick_length}),
+    )
+
+    # secondary y
     if ax2 is not None:
         ax2.tick_params(
             axis="y",
+            which="major",
             labelsize=tick_labelsize,
             direction=tick_direction,
             pad=tick_pad,
+            **({} if secondary_major_tick_length is None else {"length": secondary_major_tick_length}),
+        )
+        ax2.tick_params(
+            axis="y",
+            which="minor",
+            direction=tick_direction,
+            pad=tick_pad,
+            **({} if secondary_minor_tick_length is None else {"length": secondary_minor_tick_length}),
         )
 
     # =========================
