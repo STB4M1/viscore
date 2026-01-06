@@ -3,6 +3,7 @@ import matplotlib.ticker as ticker
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.cm as cm
 from pathlib import Path
+import numpy as np
 
 
 def create_lineplot_2d(
@@ -146,6 +147,19 @@ def create_lineplot_2d(
     secondary_major_tick_length=None,
     secondary_minor_tick_length=None,
 
+    # =========================
+    # Errorbar 
+    # =========================
+    use_errorbar=None,              # None: 自動判定, True/False: 強制
+    yerr_col=None,                  # symmetric: ±err
+    yerr_low_col=None,              # asymmetric lower (bound or delta)
+    yerr_high_col=None,             # asymmetric upper (bound or delta)
+    yerr_bounds_are_absolute=True,  # True: low/high are bounds, False: low/high are deltas
+    capsize=3,
+    elinewidth=1.2,
+    ecolor=None,
+    errorbar_alpha=None,
+
 ):
     """
     VisCore: 汎用 2D 折れ線プロット（完全制御版）
@@ -236,21 +250,59 @@ def create_lineplot_2d(
             else str(key)
         )
 
-        # 右軸に乗せるキーかどうか
         target_ax = ax2 if (ax2 is not None and key in secondary_key_set) else ax
 
-        target_ax.plot(
-            df[x_col],
-            df[y_col],
-            label=disp_label if use_in_legend(i) else "_nolegend_",
-            color=color,
-            marker=marker,
-            markersize=markersize,
-            linewidth=linewidth,
-            linestyle=ls_i,
-            alpha=alpha,
-        )
+        # --- errorbar を使うか判定（後方互換）---
+        has_yerr = (yerr_col is not None) or (yerr_low_col is not None and yerr_high_col is not None)
+        do_errorbar = has_yerr if (use_errorbar is None) else bool(use_errorbar)
 
+        if do_errorbar:
+            # --- yerr を構築 ---
+            y = df[y_col].to_numpy()
+
+            yerr = None
+            if yerr_col is not None:
+                # symmetric: ±err
+                yerr = df[yerr_col].to_numpy()
+            elif (yerr_low_col is not None) and (yerr_high_col is not None):
+                low = df[yerr_low_col].to_numpy()
+                high = df[yerr_high_col].to_numpy()
+                if yerr_bounds_are_absolute:
+                    # low/high は絶対境界：y - low, high - y
+                    yerr = np.vstack([y - low, high - y])
+                else:
+                    # low/high はdelta（幅）として扱う
+                    yerr = np.vstack([low, high])
+
+            target_ax.errorbar(
+                df[x_col],
+                y,
+                yerr=yerr,
+                label=disp_label if use_in_legend(i) else "_nolegend_",
+                color=color,
+                marker=marker,
+                markersize=markersize,
+                linewidth=linewidth,
+                linestyle=ls_i,
+                alpha=alpha if errorbar_alpha is None else errorbar_alpha,
+                capsize=capsize,
+                elinewidth=elinewidth,
+                ecolor=ecolor,
+            )
+        else:
+            # 既存どおり
+            target_ax.plot(
+                df[x_col],
+                df[y_col],
+                label=disp_label if use_in_legend(i) else "_nolegend_",
+                color=color,
+                marker=marker,
+                markersize=markersize,
+                linewidth=linewidth,
+                linestyle=ls_i,
+                alpha=alpha,
+            )
+            
     # =========================
     # Labels / Title
     # =========================
