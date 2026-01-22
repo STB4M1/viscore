@@ -40,6 +40,13 @@ def create_lineplot_2d(
     linestyle_dict=None,   # dict[label -> linestyle]
     linestyles=None,       # list/tuple of linestyles (labels順)
 
+    marker_dict=None,      # dict[label -> marker]
+    markers=None,          # list/tuple markers (labels順)
+    markersize_dict=None,  # dict[label -> markersize]
+    markersizes=None,      # list/tuple markersizes (labels順)
+    linewidth_dict=None,   # dict[label -> linewidth]
+    linewidths=None,       # list/tuple linewidths (labels順)
+
     # =========================
     # 軸範囲
     # =========================
@@ -229,6 +236,42 @@ def create_lineplot_2d(
         linestyle_list = [linestyle] * len(labels)
 
     # =========================
+    # marker 決定
+    # =========================
+    if marker_dict is not None:
+        marker_list = [marker_dict.get(label, marker) for label in labels]
+    elif markers is not None:
+        if len(markers) < len(labels):
+            raise ValueError("markers length < number of datasets")
+        marker_list = list(markers)
+    else:
+        marker_list = [marker] * len(labels)
+
+    # =========================
+    # markersize 決定
+    # =========================
+    if markersize_dict is not None:
+        markersize_list = [markersize_dict.get(label, markersize) for label in labels]
+    elif markersizes is not None:
+        if len(markersizes) < len(labels):
+            raise ValueError("markersizes length < number of datasets")
+        markersize_list = list(markersizes)
+    else:
+        markersize_list = [markersize] * len(labels)
+
+    # =========================
+    # linewidth 決定
+    # =========================
+    if linewidth_dict is not None:
+        linewidth_list = [linewidth_dict.get(label, linewidth) for label in labels]
+    elif linewidths is not None:
+        if len(linewidths) < len(labels):
+            raise ValueError("linewidths length < number of datasets")
+        linewidth_list = list(linewidths)
+    else:
+        linewidth_list = [linewidth] * len(labels)
+
+    # =========================
     # 凡例表示判定
     # =========================
     def use_in_legend(i):
@@ -241,7 +284,9 @@ def create_lineplot_2d(
     # =========================
     # Plot
     # =========================
-    for i, (key, color, ls_i) in enumerate(zip(labels, color_list, linestyle_list)):
+    for i, (key, color, ls_i, mk_i, ms_i, lw_i) in enumerate(
+        zip(labels, color_list, linestyle_list, marker_list, markersize_list, linewidth_list)
+    ):
         df = data_dict[key]
 
         disp_label = (
@@ -280,9 +325,9 @@ def create_lineplot_2d(
                 yerr=yerr,
                 label=disp_label if use_in_legend(i) else "_nolegend_",
                 color=color,
-                marker=marker,
-                markersize=markersize,
-                linewidth=linewidth,
+                marker=mk_i,
+                markersize=ms_i,
+                linewidth=lw_i,
                 linestyle=ls_i,
                 alpha=alpha if errorbar_alpha is None else errorbar_alpha,
                 capsize=capsize,
@@ -296,9 +341,9 @@ def create_lineplot_2d(
                 df[y_col],
                 label=disp_label if use_in_legend(i) else "_nolegend_",
                 color=color,
-                marker=marker,
-                markersize=markersize,
-                linewidth=linewidth,
+                marker=mk_i,
+                markersize=ms_i,
+                linewidth=lw_i,
                 linestyle=ls_i,
                 alpha=alpha,
             )
