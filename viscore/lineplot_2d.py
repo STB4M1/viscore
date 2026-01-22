@@ -3,6 +3,7 @@ import matplotlib.ticker as ticker
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.cm as cm
 from pathlib import Path
+import numpy as np
 
 
 def create_lineplot_2d(
@@ -38,6 +39,13 @@ def create_lineplot_2d(
     alpha=1.0,
     linestyle_dict=None,   # dict[label -> linestyle]
     linestyles=None,       # list/tuple of linestyles (labels順)
+
+    marker_dict=None,      # dict[label -> marker]
+    markers=None,          # list/tuple markers (labels順)
+    markersize_dict=None,  # dict[label -> markersize]
+    markersizes=None,      # list/tuple markersizes (labels順)
+    linewidth_dict=None,   # dict[label -> linewidth]
+    linewidths=None,       # list/tuple linewidths (labels順)
 
     # =========================
     # 軸範囲
@@ -146,6 +154,19 @@ def create_lineplot_2d(
     secondary_major_tick_length=None,
     secondary_minor_tick_length=None,
 
+    # =========================
+    # Errorbar 
+    # =========================
+    use_errorbar=None,              # None: 自動判定, True/False: 強制
+    yerr_col=None,                  # symmetric: ±err
+    yerr_low_col=None,              # asymmetric lower (bound or delta)
+    yerr_high_col=None,             # asymmetric upper (bound or delta)
+    yerr_bounds_are_absolute=True,  # True: low/high are bounds, False: low/high are deltas
+    capsize=3,
+    elinewidth=1.2,
+    ecolor=None,
+    errorbar_alpha=None,
+
 ):
     """
     VisCore: 汎用 2D 折れ線プロット（完全制御版）
@@ -215,6 +236,42 @@ def create_lineplot_2d(
         linestyle_list = [linestyle] * len(labels)
 
     # =========================
+    # marker 決定
+    # =========================
+    if marker_dict is not None:
+        marker_list = [marker_dict.get(label, marker) for label in labels]
+    elif markers is not None:
+        if len(markers) < len(labels):
+            raise ValueError("markers length < number of datasets")
+        marker_list = list(markers)
+    else:
+        marker_list = [marker] * len(labels)
+
+    # =========================
+    # markersize 決定
+    # =========================
+    if markersize_dict is not None:
+        markersize_list = [markersize_dict.get(label, markersize) for label in labels]
+    elif markersizes is not None:
+        if len(markersizes) < len(labels):
+            raise ValueError("markersizes length < number of datasets")
+        markersize_list = list(markersizes)
+    else:
+        markersize_list = [markersize] * len(labels)
+
+    # =========================
+    # linewidth 決定
+    # =========================
+    if linewidth_dict is not None:
+        linewidth_list = [linewidth_dict.get(label, linewidth) for label in labels]
+    elif linewidths is not None:
+        if len(linewidths) < len(labels):
+            raise ValueError("linewidths length < number of datasets")
+        linewidth_list = list(linewidths)
+    else:
+        linewidth_list = [linewidth] * len(labels)
+
+    # =========================
     # 凡例表示判定
     # =========================
     def use_in_legend(i):
@@ -227,7 +284,9 @@ def create_lineplot_2d(
     # =========================
     # Plot
     # =========================
-    for i, (key, color, ls_i) in enumerate(zip(labels, color_list, linestyle_list)):
+    for i, (key, color, ls_i, mk_i, ms_i, lw_i) in enumerate(
+        zip(labels, color_list, linestyle_list, marker_list, markersize_list, linewidth_list)
+    ):
         df = data_dict[key]
 
         disp_label = (
@@ -236,21 +295,59 @@ def create_lineplot_2d(
             else str(key)
         )
 
-        # 右軸に乗せるキーかどうか
         target_ax = ax2 if (ax2 is not None and key in secondary_key_set) else ax
 
-        target_ax.plot(
-            df[x_col],
-            df[y_col],
-            label=disp_label if use_in_legend(i) else "_nolegend_",
-            color=color,
-            marker=marker,
-            markersize=markersize,
-            linewidth=linewidth,
-            linestyle=ls_i,
-            alpha=alpha,
-        )
+        # --- errorbar を使うか判定（後方互換）---
+        has_yerr = (yerr_col is not None) or (yerr_low_col is not None and yerr_high_col is not None)
+        do_errorbar = has_yerr if (use_errorbar is None) else bool(use_errorbar)
 
+        if do_errorbar:
+            # --- yerr を構築 ---
+            y = df[y_col].to_numpy()
+
+            yerr = None
+            if yerr_col is not None:
+                # symmetric: ±err
+                yerr = df[yerr_col].to_numpy()
+            elif (yerr_low_col is not None) and (yerr_high_col is not None):
+                low = df[yerr_low_col].to_numpy()
+                high = df[yerr_high_col].to_numpy()
+                if yerr_bounds_are_absolute:
+                    # low/high は絶対境界：y - low, high - y
+                    yerr = np.vstack([y - low, high - y])
+                else:
+                    # low/high はdelta（幅）として扱う
+                    yerr = np.vstack([low, high])
+
+            target_ax.errorbar(
+                df[x_col],
+                y,
+                yerr=yerr,
+                label=disp_label if use_in_legend(i) else "_nolegend_",
+                color=color,
+                marker=mk_i,
+                markersize=ms_i,
+                linewidth=lw_i,
+                linestyle=ls_i,
+                alpha=alpha if errorbar_alpha is None else errorbar_alpha,
+                capsize=capsize,
+                elinewidth=elinewidth,
+                ecolor=ecolor,
+            )
+        else:
+            # 既存どおり
+            target_ax.plot(
+                df[x_col],
+                df[y_col],
+                label=disp_label if use_in_legend(i) else "_nolegend_",
+                color=color,
+                marker=mk_i,
+                markersize=ms_i,
+                linewidth=lw_i,
+                linestyle=ls_i,
+                alpha=alpha,
+            )
+            
     # =========================
     # Labels / Title
     # =========================
