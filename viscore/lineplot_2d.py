@@ -386,6 +386,19 @@ def create_lineplot_2d(
     if y_scale is not None:
         ax.set_yscale(y_scale)
 
+    # =========================================================
+    # Guarantee major ticks when x_tick_interval is specified
+    # (No new args, keep backward behavior unless x_lim is also set)
+    # =========================================================
+    if (x_tick_interval is not None) and (x_lim is not None) and (x_scale in (None, "linear")):
+        xmin, xmax = x_lim
+        # 浮動小数誤差対策で少しだけ余裕を持たせる
+        eps = 1e-9 * max(1.0, abs(xmax - xmin))
+        start = np.ceil((xmin - eps) / x_tick_interval) * x_tick_interval
+        end   = np.floor((xmax + eps) / x_tick_interval) * x_tick_interval
+        ticks = np.arange(start, end + x_tick_interval * 0.5, x_tick_interval)
+        ax.set_xticks(ticks)
+
     # =========================
     # Axis & ticks (secondary y)
     # =========================
