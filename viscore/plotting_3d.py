@@ -16,6 +16,7 @@ def create_plot_3d(
     fig_size=(7, 3),
     dpi_val=200,
     box_aspect_z_scale=0.5,
+    box_aspect=None,
 
     # --- cropping / range settings ---
     x_min=None, x_max=None,
@@ -169,9 +170,12 @@ def create_plot_3d(
     x_range = x_hi - x_lo
     y_range = y_hi - y_lo
 
-    # aspect 設定
-    ax.set_box_aspect((x_range, y_range, x_range * box_aspect_z_scale))
-
+    # aspect 設定（完全指定が最優先）
+    if box_aspect is not None:
+        ax.set_box_aspect(box_aspect)
+    else:
+        ax.set_box_aspect((x_range, y_range, x_range * box_aspect_z_scale))
+        
     # ============================================================
     # 5. Tick settings
     # ============================================================
