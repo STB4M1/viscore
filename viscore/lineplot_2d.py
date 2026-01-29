@@ -363,6 +363,12 @@ def create_lineplot_2d(
     # =========================
     # Axis & ticks (primary)
     # =========================
+    # Scale (primary)
+    if x_scale is not None:
+        ax.set_xscale(x_scale)
+    if y_scale is not None:
+        ax.set_yscale(y_scale)
+
     if x_integer:
         ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
     if x_tick_interval is not None:
@@ -380,11 +386,6 @@ def create_lineplot_2d(
     if y_lim is not None:
         ax.set_ylim(*y_lim)
 
-    # Scale (primary)
-    if x_scale is not None:
-        ax.set_xscale(x_scale)
-    if y_scale is not None:
-        ax.set_yscale(y_scale)
 
     # =========================================================
     # Guarantee major ticks when x_tick_interval is specified
@@ -402,6 +403,10 @@ def create_lineplot_2d(
     # =========================
     # Axis & ticks (secondary y)
     # =========================
+    # Scale (secondary y)
+    if ax2 is not None and secondary_y_scale is not None:
+        ax2.set_yscale(secondary_y_scale)
+        
     if ax2 is not None:
         if secondary_y_tick_interval is not None:
             ax2.yaxis.set_major_locator(
@@ -413,10 +418,6 @@ def create_lineplot_2d(
             )
         if secondary_y_lim is not None:
             ax2.set_ylim(*secondary_y_lim)
-
-    # Scale (secondary y)
-    if ax2 is not None and secondary_y_scale is not None:
-        ax2.set_yscale(secondary_y_scale)
 
     # =========================
     # Minor ticks (primary)  ※Noneなら触らない（後方互換）
