@@ -297,9 +297,23 @@ def create_lineplot_2d(
 
         target_ax = ax2 if (ax2 is not None and key in secondary_key_set) else ax
 
-        # --- errorbar を使うか判定（後方互換）---
-        has_yerr = (yerr_col is not None) or (yerr_low_col is not None and yerr_high_col is not None)
-        do_errorbar = has_yerr if (use_errorbar is None) else bool(use_errorbar)
+        # --- errorbar を使うか判定（後方互換・安全化）---
+        has_yerr = (
+            (yerr_col is not None and (yerr_col in df.columns)) or
+            (
+                (yerr_low_col is not None) and (yerr_high_col is not None) and
+                (yerr_low_col in df.columns) and (yerr_high_col in df.columns)
+            )
+        )
+
+        # use_errorbar の意味：
+        # - None: 各系列の列有無で自動判定（推奨）
+        # - True: 強制（列がなければエラーにする＝従来より明確）
+        # - False: 強制オフ
+        if use_errorbar is None:
+            do_errorbar = has_yerr
+        else:
+            do_errorbar = bool(use_errorbar)
 
         if do_errorbar:
             # --- yerr を構築 ---

@@ -21,6 +21,14 @@ def add_axis_to_image(
     dpi_val=200,
     cmap="gray",
 
+    # --- NEW: percentile display range (完全後方互換) ---
+    use_percentile=False,          # Falseなら従来通り vmin=0,vmax=255
+    p_low=1.0,                     # use_percentile=True のときのみ有効
+    p_high=99.0,                   # use_percentile=True のときのみ有効
+
+    # --- NEW: gamma correction (完全後方互換) ---
+    gamma=None,                    # Noneなら従来通り（gamma補正なし）
+
     # --- time / title ---
     frame=None,
     frame_list=None,
@@ -52,8 +60,9 @@ def add_axis_to_image(
     画像を読み込み、明るさ・コントラスト調整したうえで、
     ピクセルピッチに基づく座標軸を付けて保存する関数。
 
-    create_heatmap_2d と同じく、
-    すべての設定を引数から制御できるように設計。
+    ✅ 完全後方互換:
+      - use_percentile=False (default) → vmin=0,vmax=255 のまま
+      - gamma=None (default) → gamma補正なし
     """
 
     # ------------------------------------------------------------
@@ -63,9 +72,23 @@ def add_axis_to_image(
         raise ValueError("pitch_x と pitch_y を指定してください。")
 
     img = Image.open(in_img_path)
+
+    # 既存処理（後方互換維持）
     img = ImageEnhance.Brightness(img).enhance(brightness)
     img = ImageEnhance.Contrast(img).enhance(contrast)
+
     img_array = np.array(img)
+
+    # --- NEW: gamma correction (optional) ---
+    # gamma < 1.0 → 明るく、gamma > 1.0 → 暗く
+    if gamma is not None:
+        if gamma <= 0:
+            raise ValueError("gamma は正の値にしてください（例: 0.7, 1.2）。")
+
+        # uint8 想定の LUT で高速に処理（RGB/Gray どちらもOK）
+        arr = img_array.astype(np.float32) / 255.0
+        arr = np.clip(arr, 0.0, 1.0) ** gamma
+        img_array = (arr * 255.0 + 0.5).astype(np.uint8)
 
     height, width = img_array.shape[:2]
 
@@ -74,10 +97,29 @@ def add_axis_to_image(
     # ------------------------------------------------------------
     fig, ax = plt.subplots(figsize=fig_size)
 
+    # --- NEW: percentile-based display range (optional) ---
+    if use_percentile:
+        # RGBなら輝度に落としてpercentileを決める（表示自体は元配列のまま）
+        if img_array.ndim == 3:
+            # ITU-R BT.601 に近い係数（見た目安定）
+            lum = 0.299 * img_array[..., 0] + 0.587 * img_array[..., 1] + 0.114 * img_array[..., 2]
+            vmin = float(np.percentile(lum, p_low))
+            vmax = float(np.percentile(lum, p_high))
+        else:
+            vmin = float(np.percentile(img_array, p_low))
+            vmax = float(np.percentile(img_array, p_high))
+
+        # 同値などで壊れないように保険
+        if not np.isfinite(vmin) or not np.isfinite(vmax) or vmax <= vmin:
+            vmin, vmax = 0.0, 255.0
+    else:
+        # 従来挙動
+        vmin, vmax = 0, 255
+
     ax.imshow(
         img_array,
         cmap=cmap,
-        vmin=0, vmax=255,
+        vmin=vmin, vmax=vmax,
         extent=[0, width * pitch_x, 0, height * pitch_y],
     )
 
